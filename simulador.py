@@ -11,7 +11,7 @@ class AutomatoFinito:
         self.transitions = {}
         for t in spec['transitions']:
             frm = t['from']
-            sym = t['read']
+            sym = t.get('read')  # None representa ε-transição
             to = t['to']
             self.transitions.setdefault((frm, sym), []).append(to)
 
@@ -41,29 +41,24 @@ class AutomatoFinito:
 
 
 def main():
-    # Arquivos padrão
     automato_file = 'automato.aut'
     testes_file   = 'testes.in'
     saida_file    = 'saida.out'
 
-    # Se vierem 3 parâmetros, usa-os
+    # Permite sobrescrever nomes via linha de comando
     if len(sys.argv) == 4:
         _, automato_file, testes_file, saida_file = sys.argv
     elif len(sys.argv) != 1:
         print(f"Uso: python3 {os.path.basename(__file__)} [<automato.aut> <testes.in> <saida.out>]")
         sys.exit(1)
 
-    # Garante criação/limpeza do arquivo de saída e sai imediatamente
+    # Limpa/cria o arquivo de saída
     try:
         open(saida_file, 'w', encoding='utf-8').close()
     except Exception as e:
         print(f"Erro ao criar arquivo de saída: {e}")
         sys.exit(1)
 
-    # ENCERRA AQUI, sem processar testes:
-    sys.exit(0)
-
-    # --- O código abaixo nunca será executado ---
     # Verifica existência dos arquivos de entrada
     for path in (automato_file, testes_file):
         if not os.path.isfile(path):
@@ -80,17 +75,17 @@ def main():
 
     af = AutomatoFinito(spec)
 
-    # Processa testes e gera saída (BUG: colunas trocadas)
+    # Processa testes e gera saída
     try:
         with open(testes_file, newline='', encoding='utf-8') as f_in, \
-             open(saida_file, 'w', newline='', encoding='utf-8') as f_out:
+             open(saida_file,    newline='', encoding='utf-8') as f_out:
             reader = csv.reader(f_in, delimiter=';')
             writer = csv.writer(f_out, delimiter=';')
             count = 0
             for palavra, esperado in reader:
                 start = time.perf_counter()
                 obtido = '1' if af.reconhece(palavra) else '0'
-                tempo = time.perf_counter() - start
+                tempo  = time.perf_counter() - start
                 # Bug intencional: inverte esperado e obtido
                 writer.writerow([palavra, obtido, esperado, f"{tempo:.6f}"])
                 count += 1
@@ -99,3 +94,7 @@ def main():
         sys.exit(1)
 
     print(f"Processados {count} testes. Saída em '{saida_file}'.")
+
+
+if __name__ == '__main__':
+    main()
